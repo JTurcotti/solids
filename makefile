@@ -1,5 +1,5 @@
-OBJECTS= main.o draw.o display.o matrix.o parser.o stack.o
-HEADERS= ml6.h display.h draw.h matrix.h parser.h stack.h
+OBJECTS= main.o draw.o display.o matrix.o parser.o stack.o gmath.o
+HEADERS= ml6.h display.h draw.h matrix.h parser.h stack.h gmath.h
 CFLAGS= -Wall -g
 LDFLAGS= -lm
 CC= gcc
@@ -27,6 +27,9 @@ parser.o: parser.c $(HEADERS)
 
 stack.o: stack.c $(HEADERS)
 	$(CC) $(CFLAGS) -c stack.c
+
+gmath.o: gmath.c $(HEADERS)
+	$(CC) $(CFLAGS) -c gmath.c
 
 clean:
 	rm *.o *~

@@ -3,6 +3,9 @@
 
 #include "matrix.h"
 
-double *calculate_normal(struct matrix *polygons, int i);
+double *calculate_normal(double, double, double,
+			 double, double, double,
+			 double, double, double);
+double dot_product(double *v0, double *v1);
 
 #endif

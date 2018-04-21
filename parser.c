@@ -80,7 +80,6 @@ void parse_file ( char * input) {
 
   struct matrix *edges = new_matrix(1, 1);
   struct matrix *polygons = new_matrix(1, 1);
-  struct matrix *transform = new_matrix(1, 1);
 
   struct stack *stack = new_stack();
 

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "ml6.h"
+#include "gmath.h"
 #include "display.h"
 #include "draw.h"
 #include "matrix.h"
@@ -222,10 +223,14 @@ int draw_polygon(double x0, double y0, double z0,
      (v1 - v0) x (v2 - v0) = <smth, smth, (x1 - x0)(y2 - y0) - (y1 - y0)(x2 - x0)>
   */
 
-  if ((x1 - x0) * (y2 - y0) <= (y1 - y0) * (x2 - x0)) {
-    //printf("culled\n");
+  double view_angle[3] = {0, 0, 1};
+  
+  if (dot_product(view_angle, calculate_normal(x0, y0, z0, x1, y1, z1, x2, y2, z2)) <= 0) {
+    printf("culled\n");
     return 0;
   } else {
+    double *norm = calculate_normal(x0, y0, z0, x1, y1, z1, x2, y2, z2);
+    printf("drawn normal {%.0f, %.0f, %.0f}\n", norm[0], norm[1], norm[2]);
     draw_line(x0, y0, x1, y1, s, c);
     draw_line(x1, y1, x2, y2, s, c);
     draw_line(x2, y2, x0, y0, s, c);

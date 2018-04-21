@@ -5,23 +5,19 @@
 #include "gmath.h"
 #include "matrix.h"
 
-double *calculate_normal(struct matrix *polygons, int i) {
+double *calculate_normal(double x0, double y0, double z0,
+			 double x1, double y1, double z1,
+			 double x2, double y2, double z2) {
 
-  double A[3];
-  double B[3];
   double *N = (double *)malloc(3 * sizeof(double));
-
-  A[0] = polygons->m[0][i+1] - polygons->m[0][i];
-  A[1] = polygons->m[1][i+1] - polygons->m[1][i];
-  A[2] = polygons->m[2][i+1] - polygons->m[2][i];
-
-  B[0] = polygons->m[0][i+2] - polygons->m[0][i];
-  B[1] = polygons->m[1][i+2] - polygons->m[1][i];
-  B[2] = polygons->m[2][i+2] - polygons->m[2][i];
-
-  N[0] = A[1] * B[2] - A[2] * B[1];
-  N[1] = A[2] * B[0] - A[0] * B[2];
-  N[2] = A[0] * B[1] - A[1] * B[0];
+  
+  N[0] = (y1 - y0) * (z2 - z0) - (z1 - z0) * (y2 - y0);
+  N[1] = (z1 - z0) * (x2 - x0) - (x1 - x0) * (z2 - z0);
+  N[2] = (x1 - x0) * (y2 - y0) - (y1 - y0) * (x2 - x0);
 
   return N;
+}
+
+double dot_product(double *v0, double *v1) {
+  return v0[0] * v1[0] + v0[1] * v1[1] + v0[2] * v1[2];
 }

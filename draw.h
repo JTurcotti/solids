@@ -17,14 +17,13 @@ void add_polygon(struct matrix *points,
 		double x2, double y2, double z2);
 
 		
-void draw_lines( struct matrix *points, screen s, color c);
-void draw_line(int x0, int y0, int x1, int y1, screen s, color c);
+void draw_lines(struct matrix *points, screen s, color c, depthmap d);
+void draw_line(struct matrix *points, int pos, screen s, color c, depthmap d);
 
 
-int draw_polygons(struct matrix *points, screen s, color c);
-int draw_polygon(struct matrix *points, int pos, screen s, color c);
-int draw_filled_triangle(struct matrix *points, int pos,
-			 screen s, color c);
+int draw_polygons(struct matrix *points, screen s, color c, depthmap d);
+int draw_polygon(struct matrix *points, int pos, screen s, color c, depthmap d);
+int draw_filled_triangle(struct matrix *points, int pos, screen s, color c, depthmap d);
 
 
 void add_circle(struct matrix *points,

@@ -1,19 +1,34 @@
+color
+255 0 0
 translate
 250 250 0
+push
 polygon
-0 0 0 100 0 0 200 200 0
+0 0 0 200 200 0 100 0 0
 rotate
 z 90
 polygon
-0 0 0 100 0 0 200 200 0
+0 0 0 200 200 0 100 0 0
 rotate
 z 90
 polygon
-0 0 0 100 0 0 200 200 0
+0 0 0 200 200 0 100 0 0
 rotate
 z 90
 polygon
-0 0 0 100 0 0 200 200 0
-
+0 0 0 200 200 0 100 0 0
+pop
+push
+translate
+0 0 10
+color
+0 255 0
+polygon
+0 50 0 50 -50 0 -50 -50 0
+pop
+color
+0 0 255
+torus
+0 0 25 50 100
 save
 aaa.png

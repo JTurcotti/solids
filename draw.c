@@ -98,22 +98,18 @@ Returns:
 Go through points 2 at a time and call draw_line to add that line
 to the screen
 ====================*/
-void draw_lines(struct matrix * points, screen s, color c) {
+void draw_lines(struct matrix * points, screen s, color c, depthmap d) {
   assert(points->rows == 4);
   
   int i;
 
   for (i = 0; i < (points->lastcol + 1) / 2; i++) {
-    draw_line(points->m[0][2 * i], points->m[1][2 * i],
-	      points->m[0][2 * i + 1], points->m[1][2 * i + 1], s, c);
+    draw_line(points, 2*i, s, c, d);
   }
 }
 
-int abs(int a) {
-  return a >= 0? a: -1 * a;
-}
 
-void draw_shallow(int x0, int y0, int x1, int y1, screen s, color c) {
+void draw_shallow(int x0, int y0, double z0, int x1, int y1, double z1, screen s, color c, depthmap d) {
   //ternary operators account for both positive and negative slopes
 
   int dx = abs(x1 - x0);
@@ -121,13 +117,16 @@ void draw_shallow(int x0, int y0, int x1, int y1, screen s, color c) {
 
   int dy = abs(y0 - y1);
   int ddy =  (y1 >= y0)? 1: -1;
+
+  double dzdx = (z1 - z0) / dx;
+  double z = z0 - dzdx;
   
   int line_sum = 2 * dy - dx;
   int y = y0;
   int x = x0 - ddx;
 
   while ((x += ddx) != x1) {
-    plot(s, c, x, y);
+    plot(s, c, d, x, y, (z += dzdx));
 
     if (line_sum > 0) {
       y += ddy;
@@ -138,7 +137,7 @@ void draw_shallow(int x0, int y0, int x1, int y1, screen s, color c) {
   }
 }
 
-void draw_steep(int x0, int y0, int x1, int y1, screen s, color c) {
+void draw_steep(int x0, int y0, double z0, int x1, int y1, double z1, screen s, color c, depthmap d) {
   
   //x and y switched from abovex
   int dx = abs(x1 - x0);
@@ -146,15 +145,17 @@ void draw_steep(int x0, int y0, int x1, int y1, screen s, color c) {
 
   int dy = abs(y0 - y1);
   int ddy =  (y1 >= y0)? 1: -1;
-	    
+
+  double dzdy = (z1 - z0) / dy;
+  double z = z0 - dzdy;
+  
   int line_sum = 2 * dx - dy;
   int x = x0;
 
   int y = y0 - ddy;
 
   while ((y += ddy) != y1) {
-
-    plot(s, c, x, y);
+    plot(s, c, d, x, y, (z += dzdy));
     
     if (line_sum > 0) {
       x += ddx;
@@ -165,8 +166,17 @@ void draw_steep(int x0, int y0, int x1, int y1, screen s, color c) {
   }
 }
 
-void draw_line(int x0, int y0, int x1, int y1, screen s, color c) {
+void draw_line(struct matrix *points, int pos, screen s, color c, depthmap d) {
+  int x0 = points->m[0][pos];
+  int y0 = points->m[1][pos];
+  double z0 = points->m[2][pos];
+  
+  int x1 = points->m[0][pos+1];
+  int y1 = points->m[1][pos+1];
+  double z1 = points->m[2][pos+1];
 
+
+  /* edge cases discarded in 3d implementation
   if (x0 == x1) {
     int y;
     int dy = (y1 > y0)? 1: -1;;
@@ -187,11 +197,12 @@ void draw_line(int x0, int y0, int x1, int y1, screen s, color c) {
       plot(s, c, x, y);
       x += dx;
       y += dy;
-    }
-  } else if (abs(y1 - y0) < abs(x1 - x0)) {
-    draw_shallow(x0, y0, x1, y1, s, c);
+      } 
+      } else */
+  if (abs(y1 - y0) < abs(x1 - x0)) {
+    draw_shallow(x0, y0, z0, x1, y1, z1, s, c, d);
   } else {
-    draw_steep(x0, y0, x1, y1, s, c);
+    draw_steep(x0, y0, z0, x1, y1, z1, s, c, d);
   }
   /*color cr;
   cr.red = 255;
@@ -209,7 +220,7 @@ void draw_line(int x0, int y0, int x1, int y1, screen s, color c) {
   
   draws triangle with three given vertices
   =========*/
-int draw_polygon(struct matrix *points, int pos, screen s, color c) {
+int draw_polygon(struct matrix *points, int pos, screen s, color c, depthmap d) {
   //  printf("Poly: (%.1f, %.1f, %.1f)\n(%.1f, %.1f, %.1f)\n(%.1f, %.1f, %.1f)\n", x0, y0, z0, x1, y1, z1, x2, y2, z2);
   /*back-face culling assumes that all 3d shapes are solids, and thus only the front faces must be drawn.
      This is computed by taking the cross product of v1 - v0 and v2 - v0
@@ -222,27 +233,34 @@ int draw_polygon(struct matrix *points, int pos, screen s, color c) {
 
   double view_angle[3] = {0, 0, 1};
   
-  if (dot_product(view_angle, calculate_normal(points, pos)) <= 0) {
+  if (dot_product(view_angle, calculate_normal(points, pos)) > 0) {
     printf("culled\n");
     return 0;
   } else {
-    draw_line(points->m[0][pos+0], points->m[1][pos+0],
-	      points->m[0][pos+1], points->m[1][pos+1], s, c);
-    draw_line(points->m[0][pos+1], points->m[1][pos+1],
-	      points->m[0][pos+2], points->m[1][pos+2], s, c);
-    draw_line(points->m[0][pos+2], points->m[1][pos+2],
-	      points->m[0][pos+0], points->m[1][pos+0], s, c);
+    struct matrix *edges = new_matrix(4, 6);
+    add_edge(edges, points->m[0][pos+0], points->m[1][pos+0], points->m[2][pos+0],
+	     points->m[0][pos+1], points->m[1][pos+1], points->m[2][pos+1]);
+    add_edge(edges, points->m[0][pos+1], points->m[1][pos+1], points->m[2][pos+1],
+	     points->m[0][pos+2], points->m[1][pos+2], points->m[2][pos+2]);
+    add_edge(edges, points->m[0][pos+2], points->m[1][pos+2], points->m[2][pos+2],
+	     points->m[0][pos+0], points->m[1][pos+0], points->m[2][pos+0]);
+    draw_lines(edges, s, c, d);
+    free(edges);
     
     return 1;
   }
 }
 
 int draw_filled_triangle(struct matrix *points, int pos,
-			 screen s, color c) {
+			 screen s, color c, depthmap d) {
+  draw_polygon(points, pos, s, get_color(255, 255, 255), d);
+  
   double view_angle[3] = {0, 0, 1};
   
-  if (dot_product(view_angle, calculate_normal(points, pos)) <= 0)
+  if (dot_product(view_angle, calculate_normal(points, pos)) > 0) {
+    printf("culled\n");
     return 0;
+  }
   
   double *left, *middle, *right;
   double p0[3] = {points->m[0][pos], points->m[1][pos], points->m[2][pos]};
@@ -294,6 +312,8 @@ int draw_filled_triangle(struct matrix *points, int pos,
   double z_blue = middle[2];
   double dzdx_blue = (right[2] - middle[2]) / (right[0] - middle[0]);
 
+  struct matrix *edges = new_matrix(4, 50);
+  
   if (middle[0] - left[0] >= 1) {
     for (x = left[0]; x < middle[0]; x++) {
       y_red += dydx_red;
@@ -302,7 +322,7 @@ int draw_filled_triangle(struct matrix *points, int pos,
       y_green += dydx_green;
       z_green += dzdx_green;
       
-      draw_line(x, y_red, x, y_green, s, c);
+      add_edge(edges, x, y_red, z_red, x, y_green, z_green);
     }
   }
 
@@ -314,9 +334,12 @@ int draw_filled_triangle(struct matrix *points, int pos,
       y_blue += dydx_blue;
       z_blue += dzdx_blue;
       
-      draw_line(x, y_red, x, y_blue, s, c);
+      add_edge(edges, x, y_red, z_red, x, y_blue, z_blue);
     }
   }
+
+  draw_lines(edges, s, c, d);
+  free(edges);
     
   return 1;
 }
@@ -330,12 +353,11 @@ int draw_filled_triangle(struct matrix *points, int pos,
 
   go thru points 3 each and draw corresponding polygon
   ==================*/
-int draw_polygons(struct matrix *points, screen s, color c) {
-  c = get_color(255, 255, 0); //ignore input color
+int draw_polygons(struct matrix *points, screen s, color c, depthmap d) {
   int i;
   int count = 0;
   for (i = 0; i < (points->lastcol + 1) / 3; i++) {
-    count += draw_filled_triangle(points, 3 * i, s, c);
+    count += draw_filled_triangle(points, 3 * i, s, c, d);
   }
 
   return count;

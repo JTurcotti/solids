@@ -8,6 +8,7 @@ for red, green and blue respectively
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "ml6.h"
 #include "display.h"
@@ -29,19 +30,11 @@ pixel 0, 0 located at the lower left corner of the screen
 02/12/10 09:09:00
 jdyrlandweaver
 ====================*/
-void plot( screen s, color c, int x, int y) {
+void plot( screen s, color c, depthmap d, int x, int y, double z) {
   int newy = YRES - 1 - y;
-  if ( x >= 0 && x < XRES && newy >=0 && newy < YRES )
+  if ( x >= 0 && x < XRES && newy >=0 && newy < YRES && z > d[x][newy]) {
     s[x][newy] = c;
-}
-
-int plot_depth(depthmap d, screen s, color c, int x, int y, int z) {
-  if (z > d[x][y]) {
-    plot(s, c, x, y);
-    d[x][y] = z;
-    return 1;
-  } else {
-    return 0;
+    d[x][newy] = z;
   }
 }
 
@@ -60,6 +53,15 @@ void clear_screen(screen s, color c) {
   for ( y=0; y < YRES; y++ )
     for ( x=0; x < XRES; x++)      
       s[x][y] = c;
+}
+
+void clear_depthmap(depthmap d) {
+
+  int x, y;
+
+  for (x = 0; x < XRES; x++)
+    for (y = 0; y < YRES; y++)
+      d[x][y] = -INFINITY;
 }
 
 

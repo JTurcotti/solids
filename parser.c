@@ -22,24 +22,24 @@ The file follows the following format:
      Every command is a single character that takes up a line
      Any command that requires arguments must have those arguments in the second line.
      The commands are as follows:
-         line: add a line to the edge matrix - 
+         line: draw a line to the screen
 	    takes 6 arguemnts (x_0, y_0, z_0) 
 	                      (x_1, y_1, z_1)
-	 polygon: add a triangle to the polygons matrix -
+	 polygon: draw a triangle to the screen
 	    takes 9 arguments (x_0, y_0, z_0) 
 	                      (x_1, y_1, z_1) 
 			      (x_2, y_2, z_2) 
-	 circle: add a circle to the edge matrix
+	 circle: draw a circle to the screen
 	    takes 4 arguments (x_center, y_center, z_center)
 	                       radius
-	 bezier: add a bezier curve to the edge matrix from endpoints and rates of change -
+	 bezier: draw a bezier curve to the screen from endpoints and rates of change -
 	    takes 8 arguments (x_0, y_0) (x_1, y_1)
 	                      (dx/dt_0, dy/dt_0) (dx/dt_1, dy/dt_1)
-	 hermite: add hermite curve to edge matrix from endpoints and control points -
+	 hermite: draw hermite curve to screen from endpoints and control points -
 	    takes 8 arguments (x_0, y_0)
                               (ctrlx_0, ctrly_0) (ctrlx_1, ctrly_1)
 			      (x_1, y_1)
-	 box: add box to polygon matrix from minimal coordinate vertex and widths -
+	 box: draw box to screen from minimal coordinate vertex and widths -
 	    takes 6 arguments (x_min, y_min, z_min)
 	                      (x_width, y_width, z_width)
 	 sphere: draw sphere from center and radius -
@@ -49,26 +49,22 @@ The file follows the following format:
 	    takes 5 arguments (x_center, y_center, z_center)
 	                       radius_minor
 			       radius_major
-	 ident: set the transform matrix to the identity matrix - 
+	 push: copy the top coordinate system and push the copy to the stack
+	 pop: remove the top coordinate system from the stack
 	 scale: create a scale matrix, 
-	    then multiply the transform matrix by the scale matrix - 
+	    then multiply the top coordinate system by it
 	    takes 3 arguments (sx, sy, sz)
 	 translate: create a translation matrix, 
-	    then multiply the transform matrix by the translation matrix - 
+	    then multiply the top coordinate system by it
 	    takes 3 arguments (tx, ty, tz)
 	 rotate: create an rotation matrix,
-	    then multiply the transform matrix by the rotation matrix -
+	    then multiply the top coordinate system by it
 	    takes 2 arguments (axis, theta) axis should be x y or z
-	 apply: apply the current transformation matrix to the 
-	    edge matrix
 	 color: set the drawing color to desired color
 	    takes 3 arguments (red, green, blue)
 	 background: set the background to desired color
 	    takes 3 arguments (red, green, blue)
-	 draw: draw the lines of the edge matrix and the triangles
-	    of the polygon matrix to the screen
-	    (displaying the screen is unimplemented)
-	 clear: clears the edge and polygon matrices
+	 clear: clears the screen
 	 save: draws and saves the screen to a file -
 	    takes 1 argument (file name)
 	 quit: end parsing
@@ -84,6 +80,7 @@ void parse_file ( char * input) {
   struct stack *stack = new_stack();
 
   screen s;
+  depthmap d;
 
   FILE *f;
   char line[256], argline[256];
@@ -92,6 +89,7 @@ void parse_file ( char * input) {
   color back = get_color(0, 0, 0);
   
   clear_screen(s, back);
+  clear_depthmap(d);
 
   if ( strcmp(input, "stdin") == 0 ) 
     f = stdin;
@@ -125,8 +123,9 @@ void parse_file ( char * input) {
       } else {
 	add_edge(edges, args[0], args[1], args[2], args[3], args[4], args[5]);
       }
-      draw_lines(matrix_mult(peek(stack), edges), s, c);
+      draw_lines(matrix_mult(peek(stack), edges), s, c, d);
       free(args);
+      free(edges);
     } else if (!strcmp(line, "polygon")) {
       double *args = malloc(9 * sizeof(double));
       polygons = new_matrix(4, 3);
@@ -140,8 +139,9 @@ void parse_file ( char * input) {
 	add_polygon(polygons, args[0], args[1], args[2], args[3], args[4],
 		    args[5], args[6], args[7], args[8]);
       }
-      draw_polygons(matrix_mult(peek(stack), polygons), s, c);
+      draw_polygons(matrix_mult(peek(stack), polygons), s, c, d);
       free(args);
+      free(polygons);
     } else if (!strcmp(line, "box")) {
       double *args = malloc(6 * sizeof(double));
       polygons = new_matrix(4, 36);
@@ -152,7 +152,7 @@ void parse_file ( char * input) {
       } else {
 	add_box(polygons, args[0], args[1], args[2], args[3], args[4], args[5]);
       }
-      draw_polygons(matrix_mult(peek(stack), polygons), s, c);
+      draw_polygons(matrix_mult(peek(stack), polygons), s, c, d);
       free(args);
     } else if (!strcmp(line, "sphere")) {
       double *args = malloc(4 * sizeof(double));
@@ -164,7 +164,7 @@ void parse_file ( char * input) {
       } else {
 	add_sphere(polygons, args[0], args[1], args[2], args[3], STEP_SIZE * 5);
       }
-      draw_polygons(matrix_mult(peek(stack), polygons), s, c);
+      draw_polygons(matrix_mult(peek(stack), polygons), s, c, d);
       free(args);
     } else if (!strcmp(line, "torus")) {
       double *args = malloc(5 * sizeof(double));
@@ -176,7 +176,7 @@ void parse_file ( char * input) {
       } else {
 	add_torus(polygons, args[0], args[1], args[2], args[3], args[4], STEP_SIZE * 5);
       }
-      draw_polygons(matrix_mult(peek(stack), polygons), s, c);
+      draw_polygons(matrix_mult(peek(stack), polygons), s, c, d);
       free(args);
     } else if (!strcmp(line, "circle")) {
       double *args = malloc(4 * sizeof(double));
@@ -188,7 +188,7 @@ void parse_file ( char * input) {
       } else {
 	add_circle(edges, args[0], args[1], args[2], args[3], STEP_SIZE);
       }
-      draw_lines(matrix_mult(peek(stack), edges), s, c);
+      draw_lines(matrix_mult(peek(stack), edges), s, c, d);
       free(args);
     } else if (!strcmp(line, "bezier")) {
       double *args = malloc(8 * sizeof(double));
@@ -203,7 +203,7 @@ void parse_file ( char * input) {
 	add_curve(edges, args[0], args[1], args[2], args[3], args[4],
 		  args[5], args[6], args[7], STEP_SIZE, BEZIER);
       }
-      draw_lines(matrix_mult(peek(stack), edges), s, c);
+      draw_lines(matrix_mult(peek(stack), edges), s, c, d);
       free(args);
     } else if (!strcmp(line, "hermite")) {
       double *args = malloc(8 * sizeof(double));
@@ -218,7 +218,7 @@ void parse_file ( char * input) {
 	add_curve(edges, args[0], args[1], args[2], args[3], args[4],
 		  args[5], args[6], args[7], STEP_SIZE, HERMITE);
       }      
-      draw_lines(matrix_mult(peek(stack), edges), s, c);
+      draw_lines(matrix_mult(peek(stack), edges), s, c, d);
       free(args);
     } else if (!strcmp(line, "push")) {
       push(stack);

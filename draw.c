@@ -9,6 +9,7 @@
 
 //function of step2:
 #define OFFSET 0 //(double) rand() / (double) RAND_MAX
+#define COLOR_VAR 100 //variance of colors in solid
 
 /*======== void add_point() ==========
 Inputs:   struct matrix * points
@@ -231,34 +232,30 @@ int draw_polygon(struct matrix *points, int pos, screen s, color c, depthmap d) 
      (v1 - v0) x (v2 - v0) = <smth, smth, (x1 - x0)(y2 - y0) - (y1 - y0)(x2 - x0)>*/
 
 
-  double view_angle[3] = {0, 0, 1};
+  /*  double view_angle[3] = {0, 0, 1};
   
   if (dot_product(view_angle, calculate_normal(points, pos)) > 0) {
-    printf("culled\n");
-    return 0;
-  } else {
-    struct matrix *edges = new_matrix(4, 6);
-    add_edge(edges, points->m[0][pos+0], points->m[1][pos+0], points->m[2][pos+0],
-	     points->m[0][pos+1], points->m[1][pos+1], points->m[2][pos+1]);
-    add_edge(edges, points->m[0][pos+1], points->m[1][pos+1], points->m[2][pos+1],
-	     points->m[0][pos+2], points->m[1][pos+2], points->m[2][pos+2]);
-    add_edge(edges, points->m[0][pos+2], points->m[1][pos+2], points->m[2][pos+2],
-	     points->m[0][pos+0], points->m[1][pos+0], points->m[2][pos+0]);
-    draw_lines(edges, s, c, d);
-    free(edges);
-    
-    return 1;
-  }
+  return 0;*/
+  struct matrix *edges = new_matrix(4, 6);
+  add_edge(edges, points->m[0][pos+0], points->m[1][pos+0], points->m[2][pos+0],
+	   points->m[0][pos+1], points->m[1][pos+1], points->m[2][pos+1]);
+  add_edge(edges, points->m[0][pos+1], points->m[1][pos+1], points->m[2][pos+1],
+	   points->m[0][pos+2], points->m[1][pos+2], points->m[2][pos+2]);
+  add_edge(edges, points->m[0][pos+2], points->m[1][pos+2], points->m[2][pos+2],
+	   points->m[0][pos+0], points->m[1][pos+0], points->m[2][pos+0]);
+  draw_lines(edges, s, c, d);
+  free(edges);
+  
+  return 1;
 }
 
 int draw_filled_triangle(struct matrix *points, int pos,
 			 screen s, color c, depthmap d) {
-  draw_polygon(points, pos, s, get_color(255, 255, 255), d);
-  
+  draw_polygon(points, pos, s, c, d);
+
   double view_angle[3] = {0, 0, 1};
   
   if (dot_product(view_angle, calculate_normal(points, pos)) > 0) {
-    printf("culled\n");
     return 0;
   }
   
@@ -344,6 +341,9 @@ int draw_filled_triangle(struct matrix *points, int pos,
   return 1;
 }
   
+int min(int a, int b) {
+  return a>b? b: a;
+}
 
 
 /*======== int draw_polygons() =======
@@ -354,10 +354,22 @@ int draw_filled_triangle(struct matrix *points, int pos,
   go thru points 3 each and draw corresponding polygon
   ==================*/
 int draw_polygons(struct matrix *points, screen s, color c, depthmap d) {
+  int r0 = min(COLOR_VAR, c.red);
+  int r1 = min(COLOR_VAR, 256 - c.red);
+  int g0 = min(COLOR_VAR, c.green);
+  int g1 = min(COLOR_VAR, 256 - c.green);
+  int b0 = min(COLOR_VAR, c.blue);
+  int b1 = min(COLOR_VAR, 256 - c.blue);
+
+  
   int i;
   int count = 0;
+  color c2;
   for (i = 0; i < (points->lastcol + 1) / 3; i++) {
-    count += draw_filled_triangle(points, 3 * i, s, c, d);
+    c2 = get_color(c.red + ((263 * i) % (r0 + r1)) - r0,
+		   c.green + ((149 * i) % (g0 + g1)) - g0,
+		   c.blue + ((257 * i) % (b0 + b1)) - b0);
+    count += draw_filled_triangle(points, 3 * i, s, c2, d);
   }
 
   return count;

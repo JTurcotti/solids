@@ -17,18 +17,17 @@ void add_polygon(struct matrix *points,
 		double x2, double y2, double z2);
 
 		
-void draw_lines( struct matrix * points, screen s, color c);
+void draw_lines( struct matrix *points, screen s, color c);
 void draw_line(int x0, int y0, int x1, int y1, screen s, color c);
 
 
-int draw_polygons(struct matrix * points, screen s, color c);
-int draw_polygon(double x0, double y0, double z0,
-		 double x1, double y1, double z1,
-		 double x2, double y2, double z2,
-		 screen s, color c);
+int draw_polygons(struct matrix *points, screen s, color c);
+int draw_polygon(struct matrix *points, int pos, screen s, color c);
+int draw_filled_triangle(struct matrix *points, int pos,
+			 screen s, color c);
 
 
-void add_circle(struct matrix * points,
+void add_circle(struct matrix *points,
 		double cx, double cy, double cz,
 		double r, double step);
 

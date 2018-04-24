@@ -209,81 +209,117 @@ void draw_line(int x0, int y0, int x1, int y1, screen s, color c) {
   
   draws triangle with three given vertices
   =========*/
-int draw_polygon(double x0, double y0, double z0,
-		 double x1, double y1, double z1,
-		 double x2, double y2, double z2,
-		 screen s, color c) {
+int draw_polygon(struct matrix *points, int pos, screen s, color c) {
   //  printf("Poly: (%.1f, %.1f, %.1f)\n(%.1f, %.1f, %.1f)\n(%.1f, %.1f, %.1f)\n", x0, y0, z0, x1, y1, z1, x2, y2, z2);
-  /* back-face culling assumes that all 3d shapes are solids, and thus only the front faces must be drawn.
+  /*back-face culling assumes that all 3d shapes are solids, and thus only the front faces must be drawn.
      This is computed by taking the cross product of v1 - v0 and v2 - v0
      If the z component is positive, it faces forwards and should be displayed
      if negative, it faces away and will be hidden
      if zero, it is perpendicular to the plane of viewing (also invisible)
 
-     (v1 - v0) x (v2 - v0) = <smth, smth, (x1 - x0)(y2 - y0) - (y1 - y0)(x2 - x0)>
-  */
+     (v1 - v0) x (v2 - v0) = <smth, smth, (x1 - x0)(y2 - y0) - (y1 - y0)(x2 - x0)>*/
+
 
   double view_angle[3] = {0, 0, 1};
   
-  if (dot_product(view_angle, calculate_normal(x0, y0, z0, x1, y1, z1, x2, y2, z2)) <= 0) {
+  if (dot_product(view_angle, calculate_normal(points, pos)) <= 0) {
     printf("culled\n");
     return 0;
   } else {
-    double *norm = calculate_normal(x0, y0, z0, x1, y1, z1, x2, y2, z2);
-    printf("drawn normal {%.0f, %.0f, %.0f}\n", norm[0], norm[1], norm[2]);
-    draw_line(x0, y0, x1, y1, s, c);
-    draw_line(x1, y1, x2, y2, s, c);
-    draw_line(x2, y2, x0, y0, s, c);
-    //printf("drawn\n");
+    draw_line(points->m[0][pos+0], points->m[1][pos+0],
+	      points->m[0][pos+1], points->m[1][pos+1], s, c);
+    draw_line(points->m[0][pos+1], points->m[1][pos+1],
+	      points->m[0][pos+2], points->m[1][pos+2], s, c);
+    draw_line(points->m[0][pos+2], points->m[1][pos+2],
+	      points->m[0][pos+0], points->m[1][pos+0], s, c);
+    
     return 1;
   }
 }
 
-/*void draw_filled_triangle(double x0, double y0, double z0,
-			  double x1, double y1, double z1,
-			  double x2, double y2, double z2,
-			  depthmap d, screen s, color c) {
-  double points[4][3];
-  if (y0 >= y1 && y0 >= y2) {
-    points[0] = {x0, y0, z0};
-    if (y1 >= y2) {
-      points[1] = {x1, y1, z1};
-      points[2] = {x2, y2, z2};
+int draw_filled_triangle(struct matrix *points, int pos,
+			 screen s, color c) {
+  double view_angle[3] = {0, 0, 1};
+  
+  if (dot_product(view_angle, calculate_normal(points, pos)) <= 0)
+    return 0;
+  
+  double *left, *middle, *right;
+  double p0[3] = {points->m[0][pos], points->m[1][pos], points->m[2][pos]};
+  double p1[3] = {points->m[0][pos+1], points->m[1][pos+1], points->m[2][pos+1]};
+  double p2[3] = {points->m[0][pos+2], points->m[1][pos+2], points->m[2][pos+2]};
+  if (p0[0] >= p1[0] && p0[0] >= p2[0]) {
+    right = p0;
+    if (p1[0] >= p2[0]) {
+      middle = p1;
+      left = p2;
     } else {
-      points[1] = {x2, y2, z2};
-      points[2] = {x1, y1, z1};
+      middle = p2;
+      left = p1;
     }
-  } else if (y1 >= y2) {
-    points[0] = {x1, y1, z1};
-    if (y0 >= y2) {
-      points[1] = {x0, y0, z0};
-      points[2] = {x2, y2, z2};
+  } else if (p1[0] >= p2[0]) {
+    right = p1;
+    if (p0[0] >= p2[0]) {
+      middle = p0;
+      left = p2;
     } else {
-      points[1] = {x2, y2, z2};
-      points[2] = {x0, y0, z0};
+      middle = p2;
+      left = p0;
     }
   } else {
-    points[0] = {x2, y2, z2};
-    if (y0 >= y1) {
-      points[1] = {x0, y0, z0};
-      points[2] = {x1, y1, z1};
+    right = p2;
+    if (p0[0] >= p1[0]) {
+      middle = p0;
+      left = p1;
     } else {
-      points[1] = {x1, y1, z1};
-      points[2] = {x0, y0, z0};
+      middle = p1;
+      left = p0;
+    }
+  }
+  
+  int x; //iterator
+
+  double y_red = left[1];
+  double dydx_red = (right[1] - left[1]) / (right[0] - left[0]);
+  double z_red = left[2];
+  double dzdx_red = (right[2] - left[2]) / (right[0] - left[0]);
+
+  double y_green = left[1];
+  double dydx_green = (middle[1] - left[1]) / (middle[0] - left[0]);
+  double z_green = left[2];
+  double dzdx_green = (middle[2] - left[2]) / (middle[0] - left[0]);
+
+  double y_blue = middle[1];
+  double dydx_blue = (right[1] - middle[1]) / (right[0] - middle[0]);
+  double z_blue = middle[2];
+  double dzdx_blue = (right[2] - middle[2]) / (right[0] - middle[0]);
+
+  if (middle[0] - left[0] >= 1) {
+    for (x = left[0]; x < middle[0]; x++) {
+      y_red += dydx_red;
+      z_red += dzdx_red;
+      
+      y_green += dydx_green;
+      z_green += dzdx_green;
+      
+      draw_line(x, y_red, x, y_green, s, c);
     }
   }
 
-  points[3][0] = points[0][0] +
-    ((points[1][1] - points[0][1]) /
-     (points[2][1] - points[0][1])) *
-    (points[2][0] - points[0][0]);
-  points[3][1] = points[1][1];
-  points[3][2] = points[0][2] +
-    ((points[1][1] - points[0][1]) /
-     (points[2][1] - points[0][1])) *
-    (points[2][2] - points[0][2]);
-  //WIP
-  }*/
+  if (right[0] - middle[0] >= 1) {
+    for (x = middle[0]; x < right[0]; x++) {
+      y_red += dydx_red;
+      z_red += dzdx_red;
+      
+      y_blue += dydx_blue;
+      z_blue += dzdx_blue;
+      
+      draw_line(x, y_red, x, y_blue, s, c);
+    }
+  }
+    
+  return 1;
+}
   
 
 
@@ -295,12 +331,11 @@ int draw_polygon(double x0, double y0, double z0,
   go thru points 3 each and draw corresponding polygon
   ==================*/
 int draw_polygons(struct matrix *points, screen s, color c) {
+  c = get_color(255, 255, 0); //ignore input color
   int i;
   int count = 0;
   for (i = 0; i < (points->lastcol + 1) / 3; i++) {
-    count += draw_polygon(points->m[0][3 * i], points->m[1][3 * i], points->m[2][3 * i],
-		 points->m[0][3 * i + 1], points->m[1][3 * i + 1], points->m[2][3 * i + 1],
-			  points->m[0][3 * i + 2], points->m[1][3 * i + 2], points->m[2][3 * i + 2], s, c);
+    count += draw_filled_triangle(points, 3 * i, s, c);
   }
 
   return count;

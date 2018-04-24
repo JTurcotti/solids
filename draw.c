@@ -9,7 +9,7 @@
 
 //function of step2:
 #define OFFSET 0 //(double) rand() / (double) RAND_MAX
-#define COLOR_VAR 100 //variance of colors in solid
+#define COLOR_VAR 80 //variance of colors in solid
 
 /*======== void add_point() ==========
 Inputs:   struct matrix * points
@@ -177,30 +177,21 @@ void draw_line(struct matrix *points, int pos, screen s, color c, depthmap d) {
   double z1 = points->m[2][pos+1];
 
 
-  /* edge cases discarded in 3d implementation
   if (x0 == x1) {
-    int y;
-    int dy = (y1 > y0)? 1: -1;;
-    for (y = y0; y != y1; y += dy) {
-      plot(s, c, x0, y);
-    }
-  } else if (y0 == y1) {
-    int x;
-    int dx = (x1 > x0)? 1: -1;
-    for (x = x0; x != x1; x += dx) {
-      plot(s, c, x, y0);
-    }
-  } else if (abs(y1 - y0) == abs(x1 - x0)) {
-    int dx = (x1 > x0)? 1: -1;
-    int dy = (y1 > y0)? 1: -1;
-    int i, x = x0, y = y0;
-    for (i = 0; i <= abs(x1 - x0); i++) {
-      plot(s, c, x, y);
-      x += dx;
+    if (y0 == y1)
+      return;
+    int x = x0;
+    int dy = y1 > y0? 1: -1;
+    int y = y0;
+    double dz = (z1 - z0) / abs(y1 - y0);
+    double z = z0;
+    while (y != y1) {
+      plot(s, c, d, x, y, z);
       y += dy;
-      } 
-      } else */
-  if (abs(y1 - y0) < abs(x1 - x0)) {
+      z += dz;
+    }
+    plot(s, c, d, x, y, z);
+  } else if (abs(y1 - y0) < abs(x1 - x0)) {
     draw_shallow(x0, y0, z0, x1, y1, z1, s, c, d);
   } else {
     draw_steep(x0, y0, z0, x1, y1, z1, s, c, d);
@@ -251,18 +242,17 @@ int draw_polygon(struct matrix *points, int pos, screen s, color c, depthmap d) 
 
 int draw_filled_triangle(struct matrix *points, int pos,
 			 screen s, color c, depthmap d) {
-  draw_polygon(points, pos, s, c, d);
-
   double view_angle[3] = {0, 0, 1};
   
   if (dot_product(view_angle, calculate_normal(points, pos)) > 0) {
     return 0;
   }
+
   
-  double *left, *middle, *right;
-  double p0[3] = {points->m[0][pos], points->m[1][pos], points->m[2][pos]};
-  double p1[3] = {points->m[0][pos+1], points->m[1][pos+1], points->m[2][pos+1]};
-  double p2[3] = {points->m[0][pos+2], points->m[1][pos+2], points->m[2][pos+2]};
+  int *left, *middle, *right;
+  int p0[3] = {points->m[0][pos], points->m[1][pos], points->m[2][pos]};
+  int p1[3] = {points->m[0][pos+1], points->m[1][pos+1], points->m[2][pos+1]};
+  int p2[3] = {points->m[0][pos+2], points->m[1][pos+2], points->m[2][pos+2]};
   if (p0[0] >= p1[0] && p0[0] >= p2[0]) {
     right = p0;
     if (p1[0] >= p2[0]) {
@@ -293,26 +283,22 @@ int draw_filled_triangle(struct matrix *points, int pos,
   }
   
   int x; //iterator
-
-  double y_red = left[1];
-  double dydx_red = (right[1] - left[1]) / (right[0] - left[0]);
-  double z_red = left[2];
-  double dzdx_red = (right[2] - left[2]) / (right[0] - left[0]);
-
-  double y_green = left[1];
-  double dydx_green = (middle[1] - left[1]) / (middle[0] - left[0]);
-  double z_green = left[2];
-  double dzdx_green = (middle[2] - left[2]) / (middle[0] - left[0]);
-
-  double y_blue = middle[1];
-  double dydx_blue = (right[1] - middle[1]) / (right[0] - middle[0]);
-  double z_blue = middle[2];
-  double dzdx_blue = (right[2] - middle[2]) / (right[0] - middle[0]);
-
   struct matrix *edges = new_matrix(4, 50);
   
-  if (middle[0] - left[0] >= 1) {
-    for (x = left[0]; x < middle[0]; x++) {
+  if (right[0] == left[0])
+    return 0;
+  double y_red = left[1];
+  double dydx_red = 1.0 * (right[1] - left[1]) / (right[0] - left[0]);
+  double z_red = left[2];
+  double dzdx_red = 1.0 * (right[2] - left[2]) / (right[0] - left[0]);
+
+  if (middle[0] != left[0]) {
+    double y_green = left[1];
+    double dydx_green = 1.0 * (middle[1] - left[1]) / (middle[0] - left[0]);
+    double z_green = left[2];
+    double dzdx_green = 1.0 * (middle[2] - left[2]) / (middle[0] - left[0]);
+
+    for (x = left[0]; x < floor(middle[0]); x++) {
       y_red += dydx_red;
       z_red += dzdx_red;
       
@@ -323,8 +309,13 @@ int draw_filled_triangle(struct matrix *points, int pos,
     }
   }
 
-  if (right[0] - middle[0] >= 1) {
-    for (x = middle[0]; x < right[0]; x++) {
+  if (right[0] != middle[0]) {
+    double y_blue = middle[1];
+    double dydx_blue = 1.0 * (right[1] - middle[1]) / (right[0] - middle[0]);
+    double z_blue = middle[2];
+    double dzdx_blue = 1.0 * (right[2] - middle[2]) / (right[0] - middle[0]);
+
+    for (x = middle[0]; x < floor(right[0]); x++) {
       y_red += dydx_red;
       z_red += dzdx_red;
       
@@ -360,15 +351,15 @@ int draw_polygons(struct matrix *points, screen s, color c, depthmap d) {
   int g1 = min(COLOR_VAR, 256 - c.green);
   int b0 = min(COLOR_VAR, c.blue);
   int b1 = min(COLOR_VAR, 256 - c.blue);
-
+  int j = rand() % 32;
   
   int i;
   int count = 0;
   color c2;
   for (i = 0; i < (points->lastcol + 1) / 3; i++) {
-    c2 = get_color(c.red + ((263 * i) % (r0 + r1)) - r0,
-		   c.green + ((149 * i) % (g0 + g1)) - g0,
-		   c.blue + ((257 * i) % (b0 + b1)) - b0);
+    c2 = get_color(c.red + ((263 * i + j) % (r0 + r1)) - r0,
+		   c.green + ((149 * i + j) % (g0 + g1)) - g0,
+		   c.blue + ((257 * i + j) % (b0 + b1)) - b0);
     count += draw_filled_triangle(points, 3 * i, s, c2, d);
   }
 
@@ -472,12 +463,12 @@ void add_box(struct matrix *points, double x0, double y0, double z0, double x_de
 
       add_polygon(points,
   		  vertices[0][0], vertices[0][1], vertices[0][2],
-  		  vertices[1][0], vertices[1][1], vertices[1][2],
-  		  vertices[2][0], vertices[2][1], vertices[2][2]);
-      add_polygon(points,
-  		  vertices[3][0], vertices[3][1], vertices[3][2],
   		  vertices[2][0], vertices[2][1], vertices[2][2],
   		  vertices[1][0], vertices[1][1], vertices[1][2]);
+      add_polygon(points,
+  		  vertices[3][0], vertices[3][1], vertices[3][2],
+  		  vertices[1][0], vertices[1][1], vertices[1][2],
+  		  vertices[2][0], vertices[2][1], vertices[2][2]);
     }
   }
 }

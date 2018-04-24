@@ -4,7 +4,7 @@
 #include "matrix.h"
 #include "ml6.h"
 
-#define STEP_SIZE 0.01
+#define STEP_SIZE 0.02
 
 void parse_file (char * filename);
 

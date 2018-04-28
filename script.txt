@@ -1,83 +1,155 @@
-#BODY
-color
-255 0 0
-push
-move
+translate
 250 250 0
+scale
+0.85 0.85 0.85
 rotate
-y -30
-box
--100 125 50 200 250 100
-#HEAD
-color
-255 0 255
+x -40
+rotate
+y 10
 push
-move
-0 175 0
-rotate
-y 90
+color
+0 0 255
 sphere
 0 0 0 50
-pop
-#LEFT ARM
 color
-255 128 0
+0 255 255
 push
-move
--100 125 0
+sphere
+75 0 0 25
 rotate
-x -45
-box
--40 0 40 40 100 80
-#LEFT LOWER ARM
+z 45
+sphere
+75 0 0 25
+rotate
+z 45
+sphere
+75 0 0 25
+rotate
+z 45
+sphere
+75 0 0 25
+rotate
+z 45
+sphere
+75 0 0 25
+rotate
+z 45
+sphere
+75 0 0 25
+rotate
+z 45
+sphere
+75 0 0 25
+rotate
+z 45
+sphere
+75 0 0 25
+rotate
+z 45
+sphere
+75 0 0 25
+pop
+color
+255 0 0
+torus
+0 0 0 30 130
+push
+translate
+0 0 55
+push
 color
 0 255 0
-push
-move
--20 -100 0
-box
--10 0 10 20 125 20
+torus
+0 0 0 5 10
+torus
+0 0 0 5 40
+torus
+0 0 0 5 70
+torus
+0 0 0 5 100
+torus
+0 0 0 5 130
+scale
+35 35 0
+torus
+0 0 0 5 10
 pop
-pop
-#RIGHT ARM
 color
-255 128 0
-push
-move
-100 125 0
+255 0 0
+torus
+0 0 0 100 450
+color
+0 0 255
+torus
+0 0 0 10 250
+color
+0 255 255
+
+
+sphere
+250 0 0 25
 rotate
-x -45
-box
-0 0 40 40 100 80
-#RIGHT LOWER ARM
-color
-0 255 0
-push
-move
-20 -100 0
+z 22.5
+sphere
+250 0 0 25
 rotate
-x -20
-box
--10 0 10 20 125 20
-pop
-pop
-#LEFT LEG
-color
-0 128 255
-push
-move
--100 -125 0
-box
-0 0 40 50 120 80
-pop
-#RIGHT LEG
-color
-0 128 255
-push
-move
-100 -125 0
-box
--50 0 40 50 120 80
-display
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+sphere
+250 0 0 25
+rotate
+z 22.5
+
 save
-robot.png
+pic.png

@@ -10,7 +10,7 @@
 #include "draw.h"
 #include "matrix.h"
 #include "parser.h"
-
+#inclyde "preparser.h"
 
 /*======== void parse_file () ==========
 Inputs:   char * filename 
@@ -96,7 +96,7 @@ void parse_file ( char * input) {
   else
     f = fopen(input, "r");
   
-  while ( fgets(line, 255, f) != NULL ) {
+  while (fgets(line, 255, f)) {
     if (strchr(line, '\r')) {
       fprintf(stderr, "Please use a script file with Unix-style (\\n) line endings\n");
       break;
@@ -174,7 +174,7 @@ void parse_file ( char * input) {
 	  ((nargs = sscanf(argline, "%lf %lf %lf %lf %lf", args, args+1, args+2, args+3, args+4)) != 5)) {
 	printf("Error: 'torus' requires 5 arguments of type double, found %d\n", nargs);
       } else {
-	add_torus(polygons, args[0], args[1], args[2], args[3], args[4], STEP_SIZE * 5);
+	add_torus(polygons, args[0], args[1], args[2], args[3], args[4], STEP_SIZE * 3);
       }
       draw_polygons(matrix_mult(peek(stack), polygons), s, c, d);
       free(args);
